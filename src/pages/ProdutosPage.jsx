@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import Header from '../components/Header'
 import TabelaProdutos from '../components/TabelaProdutos'
 import FiltrosBusca from '../components/FiltrosBusca'
+import ModalProduto from '../components/ModalProduto'
 import { produtoService } from '../services/produtoService'
 
 function ProdutosPage() {
@@ -12,6 +13,8 @@ function ProdutosPage() {
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('Todas')
   const [statusFiltro, setStatusFiltro] = useState('Todos')
+  const [modalAberto, setModalAberto] = useState(false)
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
   const carregarProdutos = async () => {
     try {
@@ -39,8 +42,31 @@ function ProdutosPage() {
     return buscaOk && categoriaOk && statusOk
   })
 
-  const handleEditar = (produto) => {
-    console.log('editar', produto)
+  const handleAbrirModal = (produto = null) => {
+    setProdutoSelecionado(produto)
+    setModalAberto(true)
+  }
+
+  const handleFecharModal = () => {
+    setModalAberto(false)
+    setProdutoSelecionado(null)
+  }
+
+  const handleSalvar = async (dados) => {
+    try {
+      if (produtoSelecionado) {
+        await produtoService.atualizar(produtoSelecionado.id, dados)
+        toast.success('Produto atualizado com sucesso!')
+      } else {
+        await produtoService.cadastrar(dados)
+        toast.success('Produto cadastrado com sucesso!')
+      }
+      await carregarProdutos()
+    } catch (error) {
+      const mensagem = error.response?.data?.mensagem || 'Erro ao salvar produto'
+      toast.error(mensagem)
+      throw error
+    }
   }
 
   const handleDeletar = (produto) => {
@@ -56,7 +82,10 @@ function ProdutosPage() {
             <h2 className="text-xl font-semibold text-gray-900">Produtos</h2>
             <p className="text-sm text-gray-500 mt-0.5">{produtos.length} produto(s) cadastrado(s)</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          <button
+            onClick={() => handleAbrirModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
             <Plus size={16} />
             Novo produto
           </button>
@@ -81,12 +110,19 @@ function ProdutosPage() {
           ) : (
             <TabelaProdutos
               produtos={produtosFiltrados}
-              onEditar={handleEditar}
+              onEditar={handleAbrirModal}
               onDeletar={handleDeletar}
             />
           )}
         </div>
       </main>
+
+      <ModalProduto
+        aberto={modalAberto}
+        onFechar={handleFecharModal}
+        onSalvar={handleSalvar}
+        produto={produtoSelecionado}
+      />
     </div>
   )
 }

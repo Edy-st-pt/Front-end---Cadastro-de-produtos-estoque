@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import TabelaProdutos from '../components/TabelaProdutos'
 import FiltrosBusca from '../components/FiltrosBusca'
 import ModalProduto from '../components/ModalProduto'
+import ModalConfirmacao from '../components/ModalConfirmacao'
 import { produtoService } from '../services/produtoService'
 
 function ProdutosPage() {
@@ -15,6 +16,8 @@ function ProdutosPage() {
   const [statusFiltro, setStatusFiltro] = useState('Todos')
   const [modalAberto, setModalAberto] = useState(false)
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
+  const [modalConfirmacaoAberto, setModalConfirmacaoAberto] = useState(false)
+  const [produtoParaDeletar, setProdutoParaDeletar] = useState(null)
 
   const carregarProdutos = async () => {
     try {
@@ -69,8 +72,26 @@ function ProdutosPage() {
     }
   }
 
-  const handleDeletar = (produto) => {
-    console.log('deletar', produto)
+  const handleAbrirConfirmacao = (produto) => {
+    setProdutoParaDeletar(produto)
+    setModalConfirmacaoAberto(true)
+  }
+
+  const handleCancelarDelecao = () => {
+    setModalConfirmacaoAberto(false)
+    setProdutoParaDeletar(null)
+  }
+
+  const handleConfirmarDelecao = async () => {
+    try {
+      await produtoService.deletar(produtoParaDeletar.id)
+      toast.success('Produto removido com sucesso!')
+      setModalConfirmacaoAberto(false)
+      setProdutoParaDeletar(null)
+      await carregarProdutos()
+    } catch {
+      toast.error('Erro ao remover produto')
+    }
   }
 
   return (
@@ -111,7 +132,7 @@ function ProdutosPage() {
             <TabelaProdutos
               produtos={produtosFiltrados}
               onEditar={handleAbrirModal}
-              onDeletar={handleDeletar}
+              onDeletar={handleAbrirConfirmacao}
             />
           )}
         </div>
@@ -122,6 +143,13 @@ function ProdutosPage() {
         onFechar={handleFecharModal}
         onSalvar={handleSalvar}
         produto={produtoSelecionado}
+      />
+
+      <ModalConfirmacao
+        aberto={modalConfirmacaoAberto}
+        onConfirmar={handleConfirmarDelecao}
+        onCancelar={handleCancelarDelecao}
+        produto={produtoParaDeletar}
       />
     </div>
   )
